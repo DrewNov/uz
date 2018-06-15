@@ -1,13 +1,18 @@
 package main;
 
 import org.telegram.telegrambots.api.methods.send.SendMessage;
+import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
 import org.telegram.telegrambots.api.objects.Update;
+import org.telegram.telegrambots.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 public class UzBot extends TelegramLongPollingBot {
@@ -25,21 +30,6 @@ public class UzBot extends TelegramLongPollingBot {
     }
 
     @Override
-    public void onUpdateReceived(Update update) {
-        Message message = update.getMessage();
-        String userName = message.getChat().getUserName();
-
-        System.out.println(message.getDate() + "\t" + userName + ":\t" + message.getText());
-
-        try {
-            SendMessage msg = new SendMessage(message.getChatId(), userName);
-            sendApiMethod(msg);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
     public String getBotUsername() {
         return props.getProperty("name");
     }
@@ -47,5 +37,64 @@ public class UzBot extends TelegramLongPollingBot {
     @Override
     public String getBotToken() {
         return props.getProperty("token");
+    }
+
+    @Override
+    public void onUpdateReceived(Update update) {
+        Message message = update.getMessage();
+        boolean isAnswer = false;
+        String incomeText = "";
+        String replyText = "";
+
+        if (message == null) {
+            isAnswer = true;
+            CallbackQuery callbackQuery = update.getCallbackQuery();
+            message = callbackQuery.getMessage();
+            incomeText = callbackQuery.getData();
+        } else {
+            incomeText = message.getText();
+        }
+
+        switch (incomeText) {
+            case "/help":
+                replyText = "ooh";
+                break;
+
+            default:
+                replyText = "whaat?";
+        }
+
+        System.out.println(message.getDate() + "\t" + message.getChat().getUserName() + ":\t" + incomeText);
+
+        try {
+            sendHideKeyboard(message, replyText);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendHideKeyboard(Message inputMsg, String text) throws TelegramApiException {
+        SendMessage sendMessage = new SendMessage(inputMsg.getChatId(), text);
+        List<InlineKeyboardButton> inlineKeyboardButtons = new ArrayList<>();
+
+        InlineKeyboardButton btn1 = new InlineKeyboardButton("btn1");
+        btn1.setCallbackData("/btn1");
+
+        InlineKeyboardButton btn2 = new InlineKeyboardButton("btn2");
+        btn2.setCallbackData("/help");
+
+        inlineKeyboardButtons.add(btn1);
+        inlineKeyboardButtons.add(btn2);
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        rows.add(inlineKeyboardButtons);
+
+        InlineKeyboardMarkup keyboardMarkup = new InlineKeyboardMarkup();
+        keyboardMarkup.setKeyboard(rows);
+
+        //sendMessage.enableMarkdown(true);
+        sendMessage.setReplyMarkup(keyboardMarkup);
+
+        sendApiMethod(sendMessage);
     }
 }
