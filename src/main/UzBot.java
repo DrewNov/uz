@@ -17,12 +17,14 @@ import java.util.Properties;
 
 public class UzBot extends TelegramLongPollingBot {
 
-    Properties props;
+    private Properties props;
+    private List<Thread> scanPool;
 
     public UzBot() {
         try {
             props = new Properties();
             props.load(new FileInputStream("resources/config.properties"));
+            scanPool = new ArrayList<>();
         } catch (IOException e) {
             System.out.println("Error: config.properties file not found!");
             e.printStackTrace();
@@ -42,12 +44,10 @@ public class UzBot extends TelegramLongPollingBot {
     @Override
     public void onUpdateReceived(Update update) {
         Message message = update.getMessage();
-        boolean isAnswer = false;
         String incomeText = "";
         String replyText = "";
 
-        if (message == null) {
-            isAnswer = true;
+        if (message == null) { //isAnswer = true
             CallbackQuery callbackQuery = update.getCallbackQuery();
             message = callbackQuery.getMessage();
             incomeText = callbackQuery.getData();
@@ -55,9 +55,41 @@ public class UzBot extends TelegramLongPollingBot {
             incomeText = message.getText();
         }
 
-        switch (incomeText) {
+        switch (incomeText.split(" ")[0]) {
             case "/help":
-                replyText = "ooh";
+                replyText = "command list will be here.. /status for example";
+                break;
+
+            case "/status":
+                if (scanPool.isEmpty()) {
+                    replyText = "0: empty";
+                } else {
+                    for (int i = 0; i < scanPool.size(); i++) {
+                        replyText += i + ": " + scanPool.get(i).getName() + "\n";
+                    }
+                }
+                break;
+
+            case "/start":
+                replyText = "all scanPool has been started";
+                break;
+
+            case "/stop":
+                replyText = "all scanPool has been stopped";
+                break;
+
+            case "/scan":
+                Thread thread = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //todo: implement
+                    }
+                });
+                thread.setName(incomeText.split(" ")[1]);
+
+                thread.run();
+
+                replyText = "scan function will be invoked here..";
                 break;
 
             default:
@@ -67,13 +99,13 @@ public class UzBot extends TelegramLongPollingBot {
         System.out.println(message.getDate() + "\t" + message.getChat().getUserName() + ":\t" + incomeText);
 
         try {
-            sendHideKeyboard(message, replyText);
+            sendApiMethod(new SendMessage(message.getChatId(), replyText));
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
     }
 
-    private void sendHideKeyboard(Message inputMsg, String text) throws TelegramApiException {
+    private void sendKeyboard(Message inputMsg, String text) throws TelegramApiException {
         SendMessage sendMessage = new SendMessage(inputMsg.getChatId(), text);
         List<InlineKeyboardButton> inlineKeyboardButtons = new ArrayList<>();
 
