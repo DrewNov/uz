@@ -47,62 +47,96 @@ public class UzBot extends TelegramLongPollingBot {
         String incomeText = "";
         String replyText = "";
 
-        if (message == null) { //isAnswer = true
+        if (message == null) {
             CallbackQuery callbackQuery = update.getCallbackQuery();
-            message = callbackQuery.getMessage();
-            incomeText = callbackQuery.getData();
+
+            if (callbackQuery != null) {//isAnswer = true
+                message = callbackQuery.getMessage();
+                incomeText = callbackQuery.getData();
+            } else {
+                message = update.getEditedMessage();
+                incomeText = message.getText();
+                replyText = "editable not supported!";
+            }
         } else {
             incomeText = message.getText();
         }
 
-        switch (incomeText.split(" ")[0]) {
-            case "/help":
-                replyText = "command list will be here.. /status for example";
-                break;
+        if (replyText.isEmpty()) {
+            switch (incomeText.split(" ")[0]) {
+                case "/help":
+                    replyText = "command list will be here.. /status for example";
+                    break;
 
-            case "/status":
-                if (scanPool.isEmpty()) {
-                    replyText = "0: empty";
-                } else {
-                    for (int i = 0; i < scanPool.size(); i++) {
-                        replyText += i + ": " + scanPool.get(i).getName() + "\n";
+                case "/status":
+                    replyText = getStatus();
+                    break;
+
+                case "/start":
+                    replyText = "all scanPool has been started";
+                    break;
+
+                case "/stop":
+                    for (Thread thread : scanPool) {
+                        thread.interrupt();
                     }
-                }
-                break;
+                    replyText = "all scanPool has been stopped";
+                    break;
 
-            case "/start":
-                replyText = "all scanPool has been started";
-                break;
+                case "/scan":
+                    String commandParam = incomeText.split(" ")[1];
 
-            case "/stop":
-                replyText = "all scanPool has been stopped";
-                break;
+                    Thread thread = new Thread(
+                            () -> {
+                                //todo: implement
+                                while (true) {
+                                    System.out.println(Thread.currentThread().getName());
+                                    try {
+                                        Thread.sleep(3000);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            },
+                            commandParam);
+                    thread.start();
 
-            case "/scan":
-                Thread thread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        //todo: implement
+                    if (scanPool.isEmpty()) {
+                        scanPool.add(thread);
+                    } else {
+                        scanPool.get(0).interrupt();
+                        scanPool.set(0, thread);
                     }
-                });
-                thread.setName(incomeText.split(" ")[1]);
 
-                thread.run();
+                    replyText = getStatus();
+                    break;
 
-                replyText = "scan function will be invoked here..";
-                break;
-
-            default:
-                replyText = "whaat?";
+                default:
+                    replyText = "whaat?";
+            }
         }
 
-        System.out.println(message.getDate() + "\t" + message.getChat().getUserName() + ":\t" + incomeText);
+        System.out.println(message.getDate() + "\t" + message.getChat().getUserName() + ":\t" + incomeText + "\t reply: " + replyText);
 
         try {
             sendApiMethod(new SendMessage(message.getChatId(), replyText));
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
+    }
+
+    private String getStatus() {
+        StringBuilder result = new StringBuilder();
+
+        if (scanPool.isEmpty()) {
+            result.append("0: empty");
+        } else {
+            for (int i = 0; i < scanPool.size(); i++) {
+                result.append(i).append(": ").append(scanPool.get(i).getName()).append("\n");
+            }
+        }
+
+        return result.toString();
     }
 
     private void sendKeyboard(Message inputMsg, String text) throws TelegramApiException {
