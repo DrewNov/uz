@@ -12,6 +12,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 
@@ -63,7 +64,9 @@ public class UzBot extends TelegramLongPollingBot {
         }
 
         if (replyText.isEmpty()) {
-            switch (incomeText.split(" ")[0]) {
+            String[] args = incomeText.split(" ");
+
+            switch (args[0]) {
                 case "/help":
                     replyText = "command list will be here.. /status for example";
                     break;
@@ -73,42 +76,68 @@ public class UzBot extends TelegramLongPollingBot {
                     break;
 
                 case "/start":
-                    replyText = "all scanPool has been started";
-                    break;
+                    if (args.length > 1) {
+                        int idx = 0;
+                        String command = args[1];
 
-                case "/stop":
-                    for (Thread thread : scanPool) {
-                        thread.interrupt();
-                    }
-                    replyText = "all scanPool has been stopped";
-                    break;
+                        if (args.length > 2) {
+                            idx = Integer.parseInt(command);
+                            command = args[2];
+                        }
 
-                case "/scan":
-                    String commandParam = incomeText.split(" ")[1];
+                        Thread newThread = new Thread(
+                                () -> {
+                                    while (true) {
+                                        if (Thread.interrupted()) {
+                                            break;
+                                        }
 
-                    Thread thread = new Thread(
-                            () -> {
-                                //todo: implement
-                                while (true) {
-                                    System.out.println(Thread.currentThread().getName());
-                                    try {
-                                        Thread.sleep(3000);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
+                                        String name = Thread.currentThread().getName();
+                                        System.out.println(name);
+
+                                        if (name.equals("zzz")) {
+                                            //todo: implement
+                                            System.out.println("todo: implement");
+                                        }
+
+                                        try {
+                                            Thread.sleep(3000);
+                                        } catch (InterruptedException e) {
+                                            System.out.println(name + ": sleep was interrupted");
+                                            Thread.currentThread().interrupt();
+                                        }
                                     }
-                                }
-                            },
-                            commandParam);
-                    thread.start();
+                                },
+                                command);
+                        newThread.start();
 
-                    if (scanPool.isEmpty()) {
-                        scanPool.add(thread);
-                    } else {
-                        scanPool.get(0).interrupt();
-                        scanPool.set(0, thread);
+                        if (idx < scanPool.size()) {
+                            scanPool.get(idx).interrupt();
+                            scanPool.set(idx, newThread);
+                        } else {
+                            scanPool.add(newThread);
+                        }
                     }
 
                     replyText = getStatus();
+                    break;
+
+                case "/stop":
+                    if (args.length == 1) {
+                        for (Iterator<Thread> iterator = scanPool.iterator(); iterator.hasNext(); ) {
+                            Thread thread = iterator.next();
+                            thread.interrupt();
+                            iterator.remove();
+                        }
+                        replyText = "all scanPool has been stopped\n";
+                    } else {
+                        int idx = Integer.parseInt(args[1]);
+                        scanPool.get(idx).interrupt();
+                        scanPool.remove(idx);
+                        replyText = "#" + idx + " scanning has been stopped\n";
+                    }
+
+                    replyText += getStatus();
                     break;
 
                 default:

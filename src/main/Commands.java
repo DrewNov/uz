@@ -6,9 +6,8 @@ public enum Commands {
 
     /*
         help - about and commands list
-        status - list of scans
-        stop - stop all or exact number of scanning
-        start - start all or exact number of scanning
-        scan - create snanning always with #0 or change exact number of scanning
+        status - list of all scans
+        start - create scan always with #0 or change scan with exact number
+        stop - stop all or exact scan number
     */
 }
