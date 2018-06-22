@@ -1,5 +1,6 @@
 package main;
 
+import org.json.JSONObject;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
 import org.telegram.telegrambots.api.objects.Message;
@@ -11,10 +12,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class UzBot extends TelegramLongPollingBot {
 
@@ -63,6 +61,8 @@ public class UzBot extends TelegramLongPollingBot {
             incomeText = message.getText();
         }
 
+        long chatId = message.getChatId();
+
         if (replyText.isEmpty()) {
             String[] args = incomeText.split(" ");
 
@@ -95,15 +95,42 @@ public class UzBot extends TelegramLongPollingBot {
                                         String name = Thread.currentThread().getName();
                                         System.out.println(name);
 
-                                        if (name.equals("zzz")) {
-                                            //todo: implement
-                                            System.out.println("todo: implement");
-                                        }
-
                                         try {
-                                            Thread.sleep(3000);
-                                        } catch (InterruptedException e) {
-                                            System.out.println(name + ": sleep was interrupted");
+                                            if (name.equals("zzz")) {
+                                                String url = UzApi.MAIN_URL + "?from=2218200&to=2200001&date=2018-07-01&url=train-list";
+
+                                                Map<String, String> params = new HashMap<String, String>() {{
+                                                    put("from", "2218200");
+                                                    put("to", "2200001");
+                                                    put("date", "2018-07-01");
+                                                    put("url", "train-list");
+                                                }};
+
+                                                JSONObject trains = UzApi.getTrains(
+                                                        params.get("from"),
+                                                        params.get("to"),
+                                                        params.get("date")
+                                                );
+
+                                                if (trains.getJSONObject("data").isNull("warning")) {
+                                                    for (int i = 0; i < 10; i++) {
+                                                        sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url));
+                                                        Thread.sleep(10 * 1000);
+                                                    }
+                                                    Thread.currentThread().interrupt();
+                                                }
+                                            }
+
+                                            Thread.sleep(5 * 60 * 1000);
+                                        } catch (Exception e) {
+                                            try {
+                                                if (!(e instanceof InterruptedException)) {
+                                                    sendApiMethod(new SendMessage(chatId, "Failed :("));
+                                                }
+                                            } catch (TelegramApiException e1) {
+                                                e1.printStackTrace();
+                                            }
+                                            e.printStackTrace();
                                             Thread.currentThread().interrupt();
                                         }
                                     }
@@ -148,7 +175,7 @@ public class UzBot extends TelegramLongPollingBot {
         System.out.println(message.getDate() + "\t" + message.getChat().getUserName() + ":\t" + incomeText + "\t reply: " + replyText);
 
         try {
-            sendApiMethod(new SendMessage(message.getChatId(), replyText));
+            sendApiMethod(new SendMessage(chatId, replyText));
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
@@ -156,6 +183,8 @@ public class UzBot extends TelegramLongPollingBot {
 
     private String getStatus() {
         StringBuilder result = new StringBuilder();
+
+        scanPool.removeIf(Thread::isAlive);
 
         if (scanPool.isEmpty()) {
             result.append("0: empty");
