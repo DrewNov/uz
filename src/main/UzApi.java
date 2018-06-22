@@ -26,11 +26,11 @@ import java.util.*;
 public class UzApi {
     private static boolean debugMode = false;
 
-    private static HttpClient httpclient;
+    private static HttpClient httpclient = HttpClients.createDefault();
     private static Header[] headers = new Header[4];
 
-    private static String MAIN_URL = "http://booking.uz.gov.ua";
-    private static String TRAINS_URL = MAIN_URL + "/purchase/search/";
+    public static String MAIN_URL = "https://booking.uz.gov.ua";
+    private static String TRAINS_URL = MAIN_URL + "/train_search/";
     private static String COACHES_URL = MAIN_URL + "/purchase/coaches/";
     private static String COACH_URL = MAIN_URL + "/purchase/coach/";
     private static String CART_URL = MAIN_URL + "/cart/add/";
@@ -152,17 +152,18 @@ public class UzApi {
         return headers;
     }
 
-    private static JSONObject getTrains(String from, String till, String date) throws Exception {
+    public static JSONObject getTrains(String from, String till, String date) throws Exception {
         // Setting request header and parameters
         HttpPost httpPOST = new HttpPost(TRAINS_URL);
 
-        httpPOST.setHeaders(headers);
+        //httpPOST.setHeaders(headers);
+        //httpPOST.addHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
 
         List<NameValuePair> params = new ArrayList<>(4);
-        params.add(new BasicNameValuePair("station_id_from", from));
-        params.add(new BasicNameValuePair("station_id_till", till));
-        params.add(new BasicNameValuePair("date_dep", date));
-        params.add(new BasicNameValuePair("time_dep", "00:00"));
+        params.add(new BasicNameValuePair("from", from));
+        params.add(new BasicNameValuePair("to", till));
+        params.add(new BasicNameValuePair("date", date));
+        params.add(new BasicNameValuePair("time", "00:00"));
 
         httpPOST.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
 
