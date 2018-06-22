@@ -114,7 +114,7 @@ public class UzBot extends TelegramLongPollingBot {
 
                                                 if (trains.getJSONObject("data").isNull("warning")) {
                                                     for (int i = 0; i < 10; i++) {
-                                                        sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url));
+                                                        sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url).disableWebPagePreview());
                                                         Thread.sleep(10 * 1000);
                                                     }
                                                     Thread.currentThread().interrupt();
@@ -122,16 +122,18 @@ public class UzBot extends TelegramLongPollingBot {
                                             }
 
                                             Thread.sleep(5 * 60 * 1000);
-                                        } catch (Exception e) {
-                                            try {
-                                                if (!(e instanceof InterruptedException)) {
-                                                    sendApiMethod(new SendMessage(chatId, "Failed :("));
-                                                }
-                                            } catch (TelegramApiException e1) {
-                                                e1.printStackTrace();
-                                            }
-                                            e.printStackTrace();
+                                        } catch (InterruptedException e) {
+                                            System.out.println(name + ": sleep was interrupted");
                                             Thread.currentThread().interrupt();
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                            try {
+                                                sendApiMethod(new SendMessage(chatId, "Failed :(").disableNotification());
+                                                Thread.sleep(30 * 60 * 1000);
+                                            } catch (TelegramApiException | InterruptedException e1) {
+                                                e1.printStackTrace();
+                                                Thread.currentThread().interrupt();
+                                            }
                                         }
                                     }
                                 },
@@ -184,7 +186,7 @@ public class UzBot extends TelegramLongPollingBot {
     private String getStatus() {
         StringBuilder result = new StringBuilder();
 
-        scanPool.removeIf(Thread::isAlive);
+        scanPool.removeIf(Thread::isInterrupted);
 
         if (scanPool.isEmpty()) {
             result.append("0: empty");
