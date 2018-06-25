@@ -1,5 +1,6 @@
 package main;
 
+import com.google.common.base.Splitter;
 import org.json.JSONObject;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
@@ -12,6 +13,7 @@ import org.telegram.telegrambots.exceptions.TelegramApiException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.util.*;
 
 public class UzBot extends TelegramLongPollingBot {
@@ -92,38 +94,29 @@ public class UzBot extends TelegramLongPollingBot {
                                             break;
                                         }
 
-                                        String name = Thread.currentThread().getName();
-                                        System.out.println(name);
-
                                         try {
-                                            if (name.equals("zzz")) {
-                                                String url = UzApi.MAIN_URL + "?from=2218200&to=2200001&date=2018-07-01&url=train-list";
+                                            URL url = new URL(Thread.currentThread().getName());
+                                            Map<String, String> params = Splitter.on("&").withKeyValueSeparator("=").split(url.getQuery());
 
-                                                Map<String, String> params = new HashMap<String, String>() {{
-                                                    put("from", "2218200");
-                                                    put("to", "2200001");
-                                                    put("date", "2018-07-01");
-                                                    put("url", "train-list");
-                                                }};
+                                            System.out.println(url.getQuery());
 
-                                                JSONObject trains = UzApi.getTrains(
-                                                        params.get("from"),
-                                                        params.get("to"),
-                                                        params.get("date")
-                                                );
+                                            JSONObject trains = UzApi.getTrains(
+                                                    params.get("from"),
+                                                    params.get("to"),
+                                                    params.get("date")
+                                            );
 
-                                                if (trains.getJSONObject("data").isNull("warning")) {
-                                                    for (int i = 0; i < 10; i++) {
-                                                        sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url).disableWebPagePreview());
-                                                        Thread.sleep(10 * 1000);
-                                                    }
-                                                    Thread.currentThread().interrupt();
+                                            if (trains.getJSONObject("data").isNull("warning")) {
+                                                for (int i = 0; i < 10; i++) {
+                                                    sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url).disableWebPagePreview());
+                                                    Thread.sleep(10 * 1000);
                                                 }
+                                                Thread.currentThread().interrupt();
                                             }
 
                                             Thread.sleep(5 * 60 * 1000);
                                         } catch (InterruptedException e) {
-                                            System.out.println(name + ": sleep was interrupted");
+                                            System.out.println(Thread.currentThread().getId() + ": sleep was interrupted");
                                             Thread.currentThread().interrupt();
                                         } catch (Exception e) {
                                             e.printStackTrace();
@@ -177,7 +170,7 @@ public class UzBot extends TelegramLongPollingBot {
         System.out.println(message.getDate() + "\t" + message.getChat().getUserName() + ":\t" + incomeText + "\t reply: " + replyText);
 
         try {
-            sendApiMethod(new SendMessage(chatId, replyText));
+            sendApiMethod(new SendMessage(chatId, replyText).disableWebPagePreview());
         } catch (TelegramApiException e) {
             e.printStackTrace();
         }
