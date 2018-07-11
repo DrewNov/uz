@@ -152,7 +152,7 @@ public class UzApi {
         return headers;
     }
 
-    public static JSONObject getTrains(String from, String till, String date) throws Exception {
+    public static JSONObject getTrains(String from, String to, String date) throws Exception {
         // Setting request header and parameters
         HttpPost httpPOST = new HttpPost(TRAINS_URL);
 
@@ -161,7 +161,7 @@ public class UzApi {
 
         List<NameValuePair> params = new ArrayList<>(4);
         params.add(new BasicNameValuePair("from", from));
-        params.add(new BasicNameValuePair("to", till));
+        params.add(new BasicNameValuePair("to", to));
         params.add(new BasicNameValuePair("date", date));
         params.add(new BasicNameValuePair("time", "00:00"));
 
