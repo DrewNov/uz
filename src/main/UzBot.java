@@ -1,6 +1,7 @@
 package main;
 
 import com.google.common.base.Splitter;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.telegrambots.api.methods.send.SendMessage;
 import org.telegram.telegrambots.api.objects.CallbackQuery;
@@ -100,18 +101,41 @@ public class UzBot extends TelegramLongPollingBot {
 
                                             System.out.println(url.getQuery());
 
-                                            JSONObject trains = UzApi.getTrains(
+                                            JSONObject data = UzApi.getTrains(
                                                     params.get("from"),
                                                     params.get("to"),
                                                     params.get("date")
                                             );
 
-                                            if (trains.getJSONObject("data").isNull("warning")) {
-                                                for (int i = 0; i < 10; i++) {
-                                                    sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url).disableWebPagePreview());
-                                                    Thread.sleep(10 * 1000);
+                                            if (data.isNull("warning")) {
+                                                boolean isOnlyPlatskart = Boolean.parseBoolean(params.getOrDefault("only_p", "false"));
+                                                boolean isPlatskartAvailable = false;
+
+                                                if (isOnlyPlatskart) {
+                                                    JSONArray trains = data.getJSONArray("list");
+
+                                                    outerloop:
+                                                    for (int i = 0; i < trains.length(); i++) {
+                                                        JSONArray types = trains.getJSONObject(i).getJSONArray("types");
+
+                                                        for (int j = 0; j < types.length(); j++) {
+                                                            JSONObject type = types.getJSONObject(j);
+
+                                                            if (type.get("id").equals("П")) {
+                                                                isPlatskartAvailable = true;
+                                                                break outerloop;
+                                                            }
+                                                        }
+                                                    }
                                                 }
-                                                Thread.currentThread().interrupt();
+
+                                                if (!(isOnlyPlatskart && !isPlatskartAvailable)) {
+                                                    for (int i = 0; i < 10; i++) {
+                                                        sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url).disableWebPagePreview());
+                                                        Thread.sleep(10 * 1000);
+                                                    }
+                                                    Thread.currentThread().interrupt();
+                                                }
                                             }
 
                                             Thread.sleep(5 * 60 * 1000);

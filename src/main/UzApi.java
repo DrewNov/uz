@@ -173,7 +173,7 @@ public class UzApi {
             System.out.println(response.getStatusLine() + "\n");
         }
 
-        return new JSONObject(inputStreamToString(response.getEntity().getContent()));
+        return new JSONObject(inputStreamToString(response.getEntity().getContent())).getJSONObject("data");
     }
 
     private static JSONObject getCoaches(String from, String till, String train, String type, String depDate) throws Exception {
