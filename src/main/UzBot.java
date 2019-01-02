@@ -108,28 +108,53 @@ public class UzBot extends TelegramLongPollingBot {
                                             );
 
                                             if (data.isNull("warning")) {
-                                                boolean isOnlyPlatskart = Boolean.parseBoolean(params.getOrDefault("only_p", "false"));
-                                                boolean isPlatskartAvailable = false;
+                                                String exactTrain = params.getOrDefault("train", "");
+                                                String exactType = params.getOrDefault("type", "");
 
-                                                if (isOnlyPlatskart) {
+                                                boolean isExactTypeFound = false;
+                                                boolean isExactTrainFound = false;
+                                                boolean success = false;
+
+                                                if (!exactType.isEmpty() || !exactTrain.isEmpty()) {
                                                     JSONArray trains = data.getJSONArray("list");
 
                                                     outerloop:
                                                     for (int i = 0; i < trains.length(); i++) {
-                                                        JSONArray types = trains.getJSONObject(i).getJSONArray("types");
+                                                        JSONObject train = trains.getJSONObject(i);
+                                                        JSONArray types = train.getJSONArray("types");
 
-                                                        for (int j = 0; j < types.length(); j++) {
-                                                            JSONObject type = types.getJSONObject(j);
+                                                        if (types.length() > 0) {
+                                                            for (int j = 0; j < types.length(); j++) {
+                                                                JSONObject type = types.getJSONObject(j);
 
-                                                            if (type.get("id").equals("П")) {
-                                                                isPlatskartAvailable = true;
-                                                                break outerloop;
+                                                                if (isExactTypeFound = exactType.equalsIgnoreCase(type.getString("id"))) {
+                                                                    if (exactTrain.isEmpty()) {
+                                                                        break outerloop;
+                                                                    } else {
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            if (!exactTrain.isEmpty() && exactTrain.equalsIgnoreCase(train.getString("num"))) {
+                                                                isExactTrainFound = true;
+                                                                break;
                                                             }
                                                         }
                                                     }
                                                 }
 
-                                                if (!(isOnlyPlatskart && !isPlatskartAvailable)) {
+                                                if (exactTrain.isEmpty()) {
+                                                    success = exactType.isEmpty() || isExactTypeFound;
+                                                } else {
+                                                    if (exactType.isEmpty()) {
+                                                        success = isExactTrainFound;
+                                                    } else {
+                                                        success = isExactTrainFound && isExactTypeFound;
+                                                    }
+                                                }
+
+                                                if (success) {
                                                     for (int i = 0; i < 10; i++) {
                                                         sendApiMethod(new SendMessage(chatId, "SUCCESS !!!\n" + url).disableWebPagePreview());
                                                         Thread.sleep(10 * 1000);
